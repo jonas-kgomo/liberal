@@ -1,6 +1,6 @@
-# Liberal
+# Libert
 
-A minimal research workspace for open inquiry, productive disagreement, and individual agency. Montaga headings, Inter interface text, and a proposed Liberal Pluralism Constitution v0.1.
+**Minimal liberalism.** A research workspace for open inquiry, productive disagreement, and individual agency. Montaga headings, Inter interface text, a sage and citron palette with original arch glyphs, and a proposed Liberal Pluralism Constitution v0.1.
 
 ## Run locally
 
@@ -69,3 +69,5 @@ Built with React and the Sites Vinext starter for Cloudflare Workers. The Sites 
 [OpenAI Responses API documentation](https://developers.openai.com/api/docs/quickstart)
 
 v0.1 is a proposed constitution. Maintainer, authorship, appeals, and conflict adjudication remain to be defined.
+
+The Libert rename retains the existing local storage key and accepts the exact legacy Liberal prompt on import. Full system instructions remain part of the configuration identity; observations from the two prompts cannot be aggregated.
