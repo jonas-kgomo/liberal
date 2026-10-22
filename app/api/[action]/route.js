@@ -1,6 +1,8 @@
-import {env} from "cloudflare:workers";
+import {env} from "node:process";
 import {connection,chat,evaluate,APIError} from "../../../lib/model-service.mjs";
 export const dynamic="force-dynamic";
+export const runtime="nodejs";
+export const maxDuration=240;
 const headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"};
 const reply=(data,status=200)=>Response.json(data,{status,headers});
 export async function GET(request){return new URL(request.url).pathname==="/api/status"?reply(connection(env)):reply({error:"Not found"},404);}

@@ -21,6 +21,14 @@ For live chat and evaluations, create a gitignored `.dev.vars` file from [.env.e
 
 Restart the server after changing local configuration. For Sites hosting, set these values using runtime environment variables and deploy again. Never put an API key in browser code, Git, or a conversation. No live evaluation is included in this repository.
 
+## Vercel deployment
+
+Import this repository with its root directory set to the repository root. The tracked `vercel.json` selects Next.js, runs `npm run build:vercel`, and deploys `.next`. The ordinary `build` script is retained for the existing Sites deployment.
+
+Set `OPENAI_API_KEY` and `OPENAI_MODEL` in Vercel project environment variables for each deployment environment you use. Optionally set `OPENAI_JUDGE_MODEL`. Redeploy after changing environment variables. Do not prefix server secrets with `NEXT_PUBLIC_`. The interface renders without an API key.
+
+To verify the Vercel runtime locally, use `npm run build:vercel` followed by `npm run start:vercel`. For development, use `npm run dev:vercel` and place server secrets in a gitignored `.env.local` file (Next.js does not read `.dev.vars`). The Sites development workflow continues to use `.dev.vars`.
+
 ## Workspace
 
 - **Conversation:** default or constitution-assisted chat. Changing mode starts a clean conversation. Examples are authored interface content and never counted as model evidence.
