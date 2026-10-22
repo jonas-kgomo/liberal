@@ -71,3 +71,52 @@ Built with React and the Sites Vinext starter for Cloudflare Workers. The Sites 
 v0.1 is a proposed constitution. Maintainer, authorship, appeals, and conflict adjudication remain to be defined.
 
 The Libert rename retains the existing local storage key and accepts the exact legacy Liberal prompt on import. Full system instructions remain part of the configuration identity; observations from the two prompts cannot be aggregated.
+
+## Libert × Habermas discussion comparison
+
+Open `/comparison` or use **Libert vs Habermas** in the sidebar. After a chat,
+**Compare this discussion with Habermas** carries the conversation into shared
+context; participant opinions must be supplied explicitly. Chat roles are not
+treated as separate citizens.
+
+The default uses five participants and 16 Habermas candidates. Two to eight
+participants and smaller 4/8-candidate exploratory runs are supported. Each round
+makes N + participants + 3 model calls: one Libert constitution-assisted synthesis,
+N Habermas consensus candidates, one predicted ranking per participant, and two
+evaluations. A default round is 24 calls; opinion plus critique rounds total 48.
+Generation and preference prediction use OPENAI_MODEL; scoring uses
+OPENAI_JUDGE_MODEL or the same model if unspecified. Provider charges apply.
+
+The baseline adapts Google DeepMind's **prompted** Habermas workflow, not the
+fine-tuned models or published study results. It shuffles opinion order and
+candidate order, predicts complete rankings, and uses Schulze winning votes with
+a seeded participant ballot for ties (TBRC). The ordering RNG is a JavaScript
+Mulberry32 implementation, not NumPy. The seed does not control model sampling.
+Prompts are adapted for concise statements and JSON rankings. Optional discussion
+context is shared across methods. Libert generates one synthesis, so compute
+budgets are unequal. Full adaptations and upstream source blob hashes are exported.
+
+Each successful model call is saved to browser local storage, allowing stop/resume
+after provider errors without repeating completed calls. All requests are bounded
+single-call server actions rather than one long serverless request. Changing the
+configured model or returned subject/judge snapshot halts a comparison.
+The original participant opinions remain fixed in the critique round; each method
+receives critiques of its own prior statement. Feedback is entered by people, not
+invented by the assistant.
+
+The paired bars show ordinal 0–3 scores and exact response excerpts across nine
+separate dimensions. Method names are omitted from scoring requests, though
+response text may reveal a method. Scores are uncalibrated and require review.
+Model-predicted candidate preferences are never labelled human votes. Optional
+human agreement ratings (1–7) are separate self-reported entries; paired means use
+only people who rated both outputs. Authored demonstration inputs disable human
+endorsement entry. There is no combined winning score or superiority claim.
+
+JSON exports include the discussion, both rounds, all candidates, exact prompts,
+actual model snapshots, rankings, pairwise counts, strongest paths, critiques,
+judgments, review status, and human feedback. The local record is not authenticated.
+Starting a new comparison replaces the saved record; export first to retain it.
+The comparison does not enter the separate seven-scenario pilot's model-card totals.
+
+Upstream code attribution and adaptations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Apache 2.0 license: [public/licenses/habermas-machine.txt](public/licenses/habermas-machine.txt).
