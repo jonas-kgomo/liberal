@@ -27,7 +27,7 @@ function MetricEvidence({assessment,attribute,target}){
  const rating=assessment?.ratings.find(r=>r.id===attribute.id);
  return <section className={"metric-evidence "+target}><div className="method-name"><i/>{titleFor(target)}<span>{target==="libert"?"Constitution-assisted":"Prompted method · adapted"}</span></div><ScoreBar rating={rating} target={target}/>{rating?.evidence?.length?<blockquote>“{rating.evidence[0]}”</blockquote>:<div className="unmeasured-quote">Supporting excerpts appear after a run.</div>}<div className="evidence-caption">{attribute.name} · {attribute.kind==="negative"?"Lower severity is better":"Higher is better"}</div>{rating&&<details><summary>Inspect this judgment</summary><p>{rating.rationale}</p>{rating.evidence.slice(1).map((q,i)=><blockquote key={i}>“{q}”</blockquote>)}{rating.uncertainty&&<p>Uncertainty: {rating.uncertainty}</p>}</details>}</section>;
 }
-export default function Comparison({discussion=[],isExample=false,status,onConnect,onBusyChange=()=>{}}){
+export default function Comparison({discussion=[],isExample=false,status,onConnect,onRunStatus=()=>{}}){
  const [form,setForm]=useState(emptyForm),[session,setSession]=useState(null),[ready,setReady]=useState(false);
  const [error,setError]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false),[progress,setProgress]=useState(null);
  const [metric,setMetric]=useState("D1"),[roundIndex,setRoundIndex]=useState(0),[critiques,setCritiques]=useState([]),[showCritiques,setShowCritiques]=useState(false),[confirmReset,setConfirmReset]=useState(false);
@@ -49,7 +49,7 @@ export default function Comparison({discussion=[],isExample=false,status,onConne
  async function execute(initial){
   if(running.current)return;
   if(!status.connected){onConnect();return;}
-  running.current=true;stopped.current=false;setBusy(true);onBusyChange(true);setError("");setNotice("");
+  running.current=true;stopped.current=false;setBusy(true);onRunStatus({state:"running",done:0,total:callsPerRound(initial.discussion)});setError("");setNotice("");
   const work=async()=>{
    let current=initial;
    const stored=localStorage.getItem(COMPARISON_STORAGE);
@@ -57,15 +57,16 @@ export default function Comparison({discussion=[],isExample=false,status,onConne
    persist(current);
    const result=await runComparisonRound(current,{
     request:async body=>{const res=await fetch("/api/compare",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw Error(data.error||"Comparison request failed.");return data;},
-    onSave:persist,onProgress:setProgress,shouldStop:()=>stopped.current
+    onSave:persist,onProgress:value=>{setProgress(value);onRunStatus({...value,state:"running"});},shouldStop:()=>stopped.current
    });
+   onRunStatus({state:roundComplete(result.rounds.at(-1))?"complete":"paused"});
    setNotice(roundComplete(result.rounds.at(-1))?"Round complete. Automated judgments are ready for review.":"Stopped after the current request. Resume to keep the completed steps.");
   };
   try{
    if(navigator.locks)await navigator.locks.request("libert-habermas-run",{ifAvailable:true},async lock=>{if(!lock)throw Error("A comparison is already running in another tab.");await work();});
    else await work();
-  }catch(e){setError(e.message);}
-  finally{running.current=false;setBusy(false);onBusyChange(false);setProgress(null);}
+  }catch(e){setError(e.message);onRunStatus({state:"paused"});}
+  finally{running.current=false;setBusy(false);setProgress(null);}
  }
  function start(event){
   event.preventDefault();
@@ -76,7 +77,7 @@ export default function Comparison({discussion=[],isExample=false,status,onConne
   try{const values=validateCritiques(critiques,session.discussion.participants);const value={...session,rounds:[session.rounds[0],newRound(1,values)]};setRoundIndex(1);setShowCritiques(false);execute(value);}catch(e){setError(e.message);}
  }
  function reset(){
-  localStorage.removeItem(COMPARISON_STORAGE);setSession(null);setForm(emptyForm());setRoundIndex(0);setError("");setNotice("");setConfirmReset(false);setShowCritiques(false);setCritiques([]);
+  localStorage.removeItem(COMPARISON_STORAGE);setSession(null);setForm(emptyForm());setRoundIndex(0);setError("");setNotice("");setConfirmReset(false);setShowCritiques(false);setCritiques([]);onRunStatus(null);
  }
  function updateParticipant(index,key,value){setForm(f=>({...f,participants:f.participants.map((p,i)=>i===index?{...p,[key]:value}:p)}));}
  function recordRating(id,target,value){
@@ -107,7 +108,7 @@ export default function Comparison({discussion=[],isExample=false,status,onConne
    <div className="session-summary"><div><div className="eyebrow">{session.discussion.source==="authored-example"?"AUTHORED DEMONSTRATION":"YOUR DISCUSSION"}</div><h2>{session.discussion.question}</h2><p>{session.discussion.participants.length} participants · {session.discussion.candidateCount} candidates · {session.subjectSnapshot||session.requestedModel} · seed {session.discussion.seed}</p></div><div className="session-actions">{session.rounds.length>1&&<label><span className="sr-only">Comparison round</span><select value={roundIndex} disabled={busy} onChange={e=>setRoundIndex(Number(e.target.value))}><option value={0}>Opinion round</option><option value={1}>Critique round</option></select></label>}<button className="subtle-button" disabled={busy} onClick={()=>setConfirmReset(!confirmReset)}><Plus size={14}/>New comparison</button></div></div>
    {confirmReset&&<div className="reset-comparison"><p>Export first to retain this record. Starting again replaces this browser’s saved comparison.</p><button className="button" onClick={reset}>Start a new comparison</button><button className="subtle-button" onClick={()=>setConfirmReset(false)}>Keep this one</button></div>}
    <details className="discussion-record"><summary>Inspect the shared discussion and protocol</summary><p>{session.discussion.transcript||"No additional discussion context."}</p>{session.discussion.participants.map(p=><div key={p.id}><strong>{p.name}</strong><p>{p.opinion}</p></div>)}<p>Requested model: {session.requestedModel}. Actual subject snapshot: {session.subjectSnapshot||"Pending"}. Judge snapshot: {session.judgeSnapshot||"Pending"}.</p></details>
-   {(busy||!roundComplete(latest))&&<div className="comparison-run-bar"><div role="status"><strong>{busy?<><Loader2 size={15} className="spin"/>{progress?.label||"Preparing comparison"}</>:"Comparison paused"}</strong><p>{completedCalls(latest)} / {callsPerRound(session.discussion)} calls completed in this round. Completed steps are saved.</p></div>{busy?<button className="button" onClick={()=>{stopped.current=true;setNotice("Stopping after the current request; completed steps will be kept.");}}>Stop after this request</button>:<button className="button primary" onClick={()=>{setRoundIndex(session.rounds.length-1);execute(session);}}><Play size={14}/>Resume comparison</button>}</div>}
+   {(busy||!roundComplete(latest))&&<div className="comparison-run-bar"><div role="status"><strong>{busy?<><Loader2 size={15} className="spin"/>{progress?.label||"Preparing comparison"}</>:"Comparison paused"}</strong><p>{completedCalls(latest)} / {callsPerRound(session.discussion)} calls completed in this round. You can keep chatting while this runs. Keep this browser tab open; completed steps are saved.</p></div>{busy?<button className="button" onClick={()=>{stopped.current=true;setNotice("Stopping after the current request; completed steps will be kept.");}}>Stop after this request</button>:<button className="button primary" onClick={()=>{setRoundIndex(session.rounds.length-1);execute(session);}}><Play size={14}/>Resume comparison</button>}</div>}
   </>}
   <section className="comparison-results" aria-labelledby="comparison-results-title">
    <div className="comparison-section-heading"><div><div className="eyebrow">SIDE BY SIDE · {round?.index===1?"AFTER CRITIQUE":"OPINION ROUND"}</div><h2 id="comparison-results-title">Tensions in the conversation.</h2></div><div className="metric-tabs" aria-label="Comparison measure">{[["D1","Common ground"],["D2","Every voice"],["N4","Forced convergence"]].map(([id,label])=><button key={id} aria-pressed={metric===id} className={metric===id?"selected":""} onClick={()=>setMetric(id)}>{label}</button>)}</div></div>
