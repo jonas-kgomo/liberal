@@ -17,7 +17,8 @@ For live chat and evaluations, create a gitignored `.dev.vars` file from [.env.e
 
 - `OPENAI_API_KEY`: a server-only OpenAI API key.
 - `OPENAI_MODEL`: an exact model identifier available to your account.
-- `OPENAI_JUDGE_MODEL`: optional separate judge; otherwise the same requested model is used and disclosed.
+- `OPENAI_JUDGE_MODEL`: optional exact model identifier for a separate judge; otherwise the same requested model is used and disclosed. Never put an API key in this field.
+- `OPENAI_TRANSCRIPTION_MODEL`: optional speech-to-text model; defaults to `whisper-1`.
 
 Restart the server after changing local configuration. For Sites hosting, set these values using runtime environment variables and deploy again. Never put an API key in browser code, Git, or a conversation. No live evaluation is included in this repository.
 
@@ -31,7 +32,8 @@ To verify the Vercel runtime locally, use `npm run build:vercel` followed by `np
 
 ## Workspace
 
-- **Conversation:** default or constitution-assisted chat. Changing mode starts a clean conversation. Examples are authored interface content and never counted as model evidence.
+- **Conversation:** choose an individual discussion or a live group room. Individual chat remains green; group rooms use pale blue, navy controls, QR invitations, and live presence. Changing mode starts a clean individual conversation.
+- **Rich text and voice:** model responses, comparison statements, and judge feedback render headings, emphasis, lists, links, and tables without showing source markers. Whisper transcription is added to the editable draft and is never sent automatically.
 - **Model card:** exact evaluated snapshots, configurations, refusal profile, limitations, and JSON export.
 - **Benchmarks:** seven pilot scenarios, separate positive and negative attributes, applicable counts, severity distributions, exact evidence, review status, import/export.
 - **Constitution:** eight versioned commitments, attribute registry, governance gaps, and downloadable specification.
@@ -48,7 +50,9 @@ Model cards describe single configurations, including actual response-model and 
 
 Imported records are structurally checked but their provenance is not authenticated. They are labelled unverified. Review the actual evidence before relying on imported results. Import limits: 2 MB and 500 observations.
 
-Chat history stays in memory and disappears on reload. Evaluation records, including prompts and responses, are stored in this browser's local storage. Export JSON to back them up; clearing site data removes them. Prompts sent to a connected model are transmitted to OpenAI with `store: false`; this does not override provider-level retention policies. This initial app is intended for a private owner workspace, not a public multi-user service; add authentication, quotas, and durable per-user storage before public deployment.
+Individual chat history stays in memory and disappears on reload. Evaluation records, including prompts and responses, are stored in this browser's local storage. Export JSON to back them up; clearing site data removes them. Prompts sent to a connected model are transmitted to OpenAI with `store: false`; this does not override provider-level retention policies.
+
+Group rooms are an ephemeral live beta. The invitation secret stays in the URL fragment, and room payloads are encrypted in the browser before they pass through the MQTT WebSocket relay. Anyone with the full invitation link can enter. The relay can observe connection metadata such as timing and the random room topic, but not the encrypted room content. Keep one participant connected while others join; each browser keeps a local copy, but there is no durable server archive, account authentication, moderation, or recovery service yet.
 
 ## Checks and build
 
@@ -117,6 +121,8 @@ actual model snapshots, rankings, pairwise counts, strongest paths, critiques,
 judgments, review status, and human feedback. The local record is not authenticated.
 Starting a new comparison replaces the saved record; export first to retain it.
 The comparison does not enter the separate seven-scenario pilot's model-card totals.
+
+Group-room relay transport follows the official EMQX MQTT-over-secure-WebSocket pattern at `wss://broker.emqx.io:8084/mqtt`; the application encrypts all room packets with an invitation-derived AES-GCM key before publishing. This public relay is suitable for the live beta and should be replaced with an authenticated managed relay before high-stakes or long-lived use.
 
 Upstream code attribution and adaptations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Apache 2.0 license: [public/licenses/habermas-machine.txt](public/licenses/habermas-machine.txt).

@@ -3,48 +3,51 @@ import {useEffect,useRef,useState} from "react";
 import {Mic,Square,Loader2,X} from "lucide-react";
 export default function VoiceInput({disabled=false,connected,onConnect,onTranscript,onActiveChange}){
  const [phase,setPhase]=useState("idle"),[seconds,setSeconds]=useState(0),[error,setError]=useState("");
- const recorder=useRef(null),stream=useRef(null),timer=useRef(null),controller=useRef(null),mounted=useRef(true),discard=useRef(false);
- const latest=useRef({onTranscript,onActiveChange});latest.current={onTranscript,onActiveChange};
+ const recorder=useRef(null),stream=useRef(null),timer=useRef(null),controller=useRef(null),mounted=useRef(true),discard=useRef(false),generation=useRef(0),starting=useRef(false);
+ const transcriptRef=useRef(onTranscript),activeChangeRef=useRef(onActiveChange);
  function cleanup(){clearInterval(timer.current);timer.current=null;stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;}
- useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;discard.current=true;controller.current?.abort();if(recorder.current?.state==="recording")recorder.current.stop();cleanup();latest.current.onActiveChange(false);};},[]);
+ useEffect(()=>{transcriptRef.current=onTranscript;activeChangeRef.current=onActiveChange;},[onTranscript,onActiveChange]);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;discard.current=true;controller.current?.abort();if(recorder.current?.state==="recording")recorder.current.stop();cleanup();activeChangeRef.current(false);};},[]);
  async function start(){
+  if(starting.current)return;
   if(!connected){onConnect();return;}
-  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){setError("Voice recording is unavailable in this browser. Use HTTPS and allow microphone access.");return;}
-  setError("");setPhase("permission");latest.current.onActiveChange(true);discard.current=false;
+  starting.current=true;const currentGeneration=++generation.current;
+  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){starting.current=false;setError("Voice recording is unavailable in this browser. Use HTTPS and allow microphone access.");return;}
+  setError("");setPhase("permission");activeChangeRef.current(true);discard.current=false;
   try{
    const media=await navigator.mediaDevices.getUserMedia({audio:true});
-   if(!mounted.current){media.getTracks().forEach(t=>t.stop());return;}
+   if(!mounted.current||currentGeneration!==generation.current){media.getTracks().forEach(t=>t.stop());starting.current=false;return;}
    stream.current=media;
    const mime=["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(t=>MediaRecorder.isTypeSupported(t));
    if(!mime)throw Error("This browser cannot create a supported audio recording.");
    const rec=new MediaRecorder(media,{mimeType:mime});recorder.current=rec;
    const chunks=[];let size=0;
    rec.ondataavailable=event=>{if(event.data.size){chunks.push(event.data);size+=event.data.size;if(size>4*1024*1024&&rec.state==="recording"){discard.current=true;setError("Recording reached the 4 MB limit. Please record a shorter message.");rec.stop();}}};
-   rec.onerror=()=>{discard.current=true;cleanup();if(rec.state==="recording")rec.stop();if(mounted.current){setPhase("idle");setError("The microphone recording failed. Please try again.");latest.current.onActiveChange(false);}};
+   rec.onerror=()=>{discard.current=true;cleanup();if(rec.state==="recording")rec.stop();if(mounted.current){setPhase("idle");setError("The microphone recording failed. Please try again.");activeChangeRef.current(false);}};
    rec.onstop=async()=>{
-    cleanup();
-    if(!mounted.current)return;
-    if(discard.current){setPhase("idle");latest.current.onActiveChange(false);return;}
+    cleanup();starting.current=false;
+    if(!mounted.current||currentGeneration!==generation.current)return;
+    if(discard.current){setPhase("idle");activeChangeRef.current(false);return;}
     setPhase("transcribing");
     try{
      const blob=new Blob(chunks,{type:rec.mimeType});if(!blob.size)throw Error("No audio was recorded.");
      controller.current=new AbortController();
      const res=await fetch("/api/transcribe",{method:"POST",headers:{"Content-Type":rec.mimeType},body:blob,signal:controller.current.signal});
      const data=await res.json();if(!res.ok)throw Error(data.error||"Transcription failed.");
-     if(mounted.current)latest.current.onTranscript(data.text);
-    }catch(e){if(mounted.current&&e.name!=="AbortError")setError(e.message);}
-    finally{if(mounted.current){setPhase("idle");latest.current.onActiveChange(false);}}
+     if(mounted.current&&currentGeneration===generation.current)transcriptRef.current(data.text);
+    }catch(e){if(mounted.current&&currentGeneration===generation.current&&e.name!=="AbortError")setError(e.message);}
+    finally{if(mounted.current&&currentGeneration===generation.current){setPhase("idle");activeChangeRef.current(false);}}
    };
-   rec.start(1000);setSeconds(0);setPhase("recording");const started=Date.now();
+   rec.start(1000);starting.current=false;setSeconds(0);setPhase("recording");const started=Date.now();
    timer.current=setInterval(()=>{const elapsed=Math.floor((Date.now()-started)/1000);setSeconds(elapsed);if(elapsed>=120&&rec.state==="recording")rec.stop();},250);
   }catch(e){
-   cleanup();if(mounted.current){setPhase("idle");latest.current.onActiveChange(false);setError(e.name==="NotAllowedError"?"Microphone access was denied. Allow it in browser settings and try again.":e.message||"Could not open the microphone.");}
+   starting.current=false;cleanup();if(mounted.current&&currentGeneration===generation.current){setPhase("idle");activeChangeRef.current(false);setError(e.name==="NotAllowedError"?"Microphone access was denied. Allow it in browser settings and try again.":e.message||"Could not open the microphone.");}
   }
  }
  function cancel(){
-  discard.current=true;controller.current?.abort();
+  generation.current++;starting.current=false;discard.current=true;controller.current?.abort();
   if(recorder.current?.state==="recording")recorder.current.stop();
-  cleanup();setPhase("idle");latest.current.onActiveChange(false);
+  cleanup();setPhase("idle");activeChangeRef.current(false);
  }
  return <div className="voice-input">
   {phase==="recording"&&<span className="recording-time" role="status">{Math.floor(seconds/60)}:{String(seconds%60).padStart(2,"0")}</span>}
