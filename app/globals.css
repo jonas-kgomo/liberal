@@ -117,7 +117,8 @@ body:has(.app-shell.group-theme){background:#e7eeee}
 .prepared-rooms button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid #c5d0d0;background:#fff;border-radius:8px;padding:12px 14px;min-height:0}
 .prepared-rooms strong{font-family:Montaga,Georgia,serif;font-size:18px;font-weight:400;color:#122021}
 .prepared-rooms small{font-size:12px;color:#4d6162;margin-top:4px;line-height:1.5}
-.composer-wrap{padding:12px 32px 23px;width:100%;max-width:860px;align-self:center}
+.room-list-empty{margin:8px 0 4px;font-size:13px;line-height:1.55;color:#4d6162;text-align:left}
+.composer-wrap{padding:12px 32px 23px;width:100%;max-width:760px;align-self:center}
 .composer{border:1px solid #bdc9b0;border-radius:10px;background:#fdfef8;box-shadow:0 3px 9px #253d3406;padding:18px 18px 12px}
 .composer:focus-within{border-color:#59734a;box-shadow:0 0 0 3px #8b9b7b20}
 .composer textarea{width:100%;resize:none;border:0;background:transparent;outline:none!important;font-size:14px;line-height:1.7;min-height:49px;padding:0}

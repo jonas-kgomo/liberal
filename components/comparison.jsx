@@ -35,7 +35,7 @@ export default function Comparison({discussion=[],isExample=false,status,onConne
  const stopped=useRef(false),running=useRef(false);
  useEffect(()=>{
   let disposed=false;stopped.current=false;
-  queueMicrotask(()=>{if(disposed)return;try{const saved=localStorage.getItem(COMPARISON_STORAGE);if(saved){const value=readSession(saved);setSession(value);setRoundIndex(value.rounds.length-1);}}catch{setError("The saved comparison could not be read. Start a new comparison to replace it.");}setReady(true);});
+  queueMicrotask(()=>{if(disposed)return;try{const saved=localStorage.getItem(COMPARISON_STORAGE);if(saved){const value=readSession(saved);setSession(value);setRoundIndex(value.rounds.length-1);}else{const handoff=JSON.parse(localStorage.getItem("libert-group-handoff")||"null");if(handoff?.participants?.length>=2){setForm({question:String(handoff.question||"").slice(0,2000),transcript:String(handoff.transcript||"").slice(0,12000),participants:handoff.participants.slice(0,8).map(person=>({name:String(person.name||"Participant").slice(0,60),opinion:String(person.opinion||"").slice(0,3000)})),candidateCount:8,seed:42,source:"user-supplied"});localStorage.removeItem("libert-group-handoff");setNotice("Voices from the group discussion are ready to compare. Review them, then run the opinion round.");}}}catch{setError("The saved comparison could not be read. Start a new comparison to replace it.");}setReady(true);});
   return()=>{disposed=true;stopped.current=true;};
  },[]);
  const round=session?.rounds[roundIndex];

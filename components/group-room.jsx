@@ -2,11 +2,12 @@
 import {useEffect,useRef,useState} from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {ArrowLeft,ArrowRight,Loader2,LockKeyhole,Radio,Send,Users} from "lucide-react";
+import {ArrowLeft,Loader2,LockKeyhole,Radio,Send,Users} from "lucide-react";
 import QRCode from "qrcode";
 import RichText from "./rich-text.jsx";
-import {AgencyIcon,DialogueIcon,InquiryIcon,LibertMark,Portal} from "./libert-icons.jsx";
+import {LibertMark} from "./libert-icons.jsx";
 import {fallbackQuestion,interviewPrompt,interviewThread,oneQuestion,roomQuestionPrompt,waitingVoices} from "../lib/interview.mjs";
+import {notePeople,rememberRoom} from "../lib/my-rooms.mjs";
 
 const PROFILE_KEY="libert-room-profile";
 const seedKey=id=>"libert-room-seed:"+id;
@@ -44,10 +45,17 @@ export default function GroupRoom({roomId}){
  const roomCode=roomId.slice(0,4).toUpperCase()+" · "+roomId.slice(-4).toUpperCase();
  const inRoom=phase!=="name";
  const mine=interviewThread(events,name);
- const discussionEvents=events.filter(event=>event.kind==="participant"||event.kind==="assistant"||(event.kind==="interview"&&event.author!=="Libert"));
- const roomTurns=events.filter(event=>event.kind==="participant"||(event.kind==="interview"&&event.author!=="Libert"));
+ const answers=mine.filter(event=>event.author!=="Libert").length;
+ const asked=answers;
 
  useEffect(()=>{nameRef.current=name;},[name]);
+ useEffect(()=>{
+  if(!inRoom||!validSecret(secret))return;
+  rememberRoom({id:roomId,secret,question,role:"joined",hostName:name,hostEmail:email,people:name?[{name,email}]:[]});
+  const spoken=[];
+  for(const event of events){if((event?.kind==="interview"||event?.kind==="participant")&&event.author&&event.author!=="Libert")spoken.push({name:event.author});}
+  notePeople(roomId,[...spoken,...presence.map(person=>({name:person.name,email:person.email}))]);
+ },[inRoom,secret,roomId,question,name,email,events,presence]);
  useEffect(()=>{emailRef.current=email;},[email]);
  useEffect(()=>{phaseRef.current=phase;},[phase]);
  useEffect(()=>{presenceRef.current=presence;},[presence]);
@@ -208,60 +216,57 @@ export default function GroupRoom({roomId}){
   }catch(e){setError(e.message);}finally{askingRef.current=false;setThinking(false);}
  }
  async function copyLink(){try{await navigator.clipboard.writeText(joinUrl);setCopied(true);setTimeout(()=>setCopied(false),1800);}catch{setError("Copy failed. Select the invitation link below.");}}
+ function openHabermas(){
+  if(voices.length<2){setError("Habermas needs at least two voices from this room.");return;}
+  localStorage.setItem("libert-group-handoff",JSON.stringify({question:questionRef.current||"Open discussion",participants:voices.map(voice=>({name:voice.name,opinion:voice.opinion.slice(0,3000)})),transcript:""}));
+  location.assign("/comparison");
+ }
 
  const scheme=joinUrl.startsWith("https://")?"https://":joinUrl.startsWith("http://")?"http://":"";
  const address=scheme?joinUrl.slice(scheme.length):joinUrl;
  const inviteLink=<div className="invite-url"><p className="invite-address"><span className="invite-scheme">{scheme}</span>{address}</p><button type="button" onClick={copyLink}>{copied?"Copied":"Copy"}</button></div>;
- const invitation=<div className="room-center-invite"><div className="room-portal" aria-hidden="true"><Portal/></div><div className="qr-frame">{qr?<Image src={qr} alt="QR code for this Libert group room" width={840} height={840} unoptimized/>:<Loader2 className="spin" size={24}/>}</div><div className="invite-share"><p>Anyone with this link can enter the room.</p>{inviteLink}</div></div>;
+ const invitation=<div className="invite-share compact"><div className="qr-frame">{qr?<Image src={qr} alt="QR code for this Libert group room" width={840} height={840} unoptimized/>:<Loader2 className="spin" size={22}/>}</div><p>Anyone with this link can enter.</p>{inviteLink}</div>;
 
  if(safeRoom===null)return <main className="room-shell"><section className="room-error"><Loader2 className="spin" size={25}/><h1>Opening the room…</h1></section></main>;
  if(!safeRoom)return <main className="room-shell"><section className="room-error"><LibertMark/><h1>Room link needed.</h1><p>Ask the host for a complete Libert room invitation.</p><Link href="/#chat"><ArrowLeft size={15}/>Back to Libert</Link></section></main>;
+ const voices=(()=>{const grouped=new Map();for(const event of events){if((event.kind!=="interview"&&event.kind!=="participant")||event.author==="Libert"||!event.content)continue;const prior=grouped.get(event.author)||[];prior.push(event.content);grouped.set(event.author,prior);}return [...grouped.entries()].map(([person,parts])=>({name:person,opinion:parts.join("\n\n")}));})();
+ const synthesis=[...events].reverse().find(event=>event.kind==="assistant")?.content||"";
+ const pairs=[];
+ for(const event of mine){if(event.author==="Libert")pairs.push({id:event.id,ask:event.content,said:""});else if(pairs.length&&!pairs.at(-1).said)pairs.at(-1).said=event.content;else pairs.push({id:event.id,ask:"",said:event.content});}
+ const flow=<ol className="room-flow" aria-label="Where you are in the room"><li className={phase==="name"?"now":"done"}><strong>Name</strong><i>Who you are</i></li><li className={phase==="discussion"?"done":phase==="waiting"?"now":""}><strong>Interview</strong><i>{phase==="waiting"?(asked?asked+" asked":"As it goes"):"As it goes"}</i></li><li className={phase==="discussion"?"now":""}><strong>Discussion</strong><i>What was said</i></li><li><strong>Compare</strong><i>Benchmark · Habermas</i></li></ol>;
+ const people=<div className="room-people"><span>IN THE ROOM</span>{(presence.length?presence:[{id:"self",name:name||"You",email}]).map(person=><div className="room-voice" key={person.email||person.id}><i>{(person.name||"?").slice(0,1).toUpperCase()}</i><div><strong>{person.name}{person.email&&person.email===email?" · you":""}</strong>{person.email?<p>{person.email}</p>:<p>Waiting for a Gmail match.</p>}</div></div>)}</div>;
  return <main className="room-shell">
   <header className="room-topbar"><Link href="/#chat" className="room-brand"><LibertMark/><span>Libert<span>.</span></span></Link><div className="room-code"><LockKeyhole size={13}/>Room {roomCode}</div><div className="room-live"><Radio size={13}/>{connection}</div></header>
-  {phase==="name"?<section className="join-card"><div className="room-eyebrow">WAITING ROOM</div><h1>{question||"You’re invited into the room."}</h1><p>Libert will ask you a few questions before the discussion. Your Gmail is only used to match you with your name. Nothing is sent.</p><div className="identity-pair"><label>Your name<input autoFocus maxLength={60} value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Maya"/></label><label>Gmail<input type="email" inputMode="email" autoComplete="email" maxLength={80} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&enter()} placeholder="maya@gmail.com"/></label></div>{error&&<div className="room-alert">{error}</div>}<button className="room-primary" onClick={enter}><Users size={17}/>Enter the waiting room</button><small>Live beta · keep one person connected so new arrivals can receive the room.</small></section>:
+  {phase==="name"?<section className="join-card"><div className="room-eyebrow">WAITING ROOM</div><h1>{question||"You’re invited into the room."}</h1>{flow}<p>Libert asks from what you say. There is no set list of questions. Your Gmail only matches you with your name. Nothing is sent.</p><div className="identity-pair"><label>Your name<input autoFocus maxLength={60} value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Maya"/></label><label>Gmail<input type="email" inputMode="email" autoComplete="email" maxLength={80} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&enter()} placeholder="maya@gmail.com"/></label></div>{error&&<div className="room-alert">{error}</div>}<button className="room-primary" onClick={enter}><Users size={17}/>Enter the waiting room</button><small>Live beta · keep one person connected so new arrivals can receive the room.</small></section>:
   <div className="room-grid">
    <section className="room-discussion">
-    <div className="room-question"><div><span>{phase==="waiting"?"WAITING ROOM":"DISCUSSION QUESTION"}</span><h1>{question||(phase==="waiting"?"Libert will ask where you stand.":"Open discussion")}</h1></div><span className="presence-pill"><Users size={14}/>{presence.length||1} present</span></div>
+    <div className="room-question"><div className="room-question-top"><div><span>{phase==="waiting"?"INTERVIEW":"OUTPUT"}</span><h1>{question||(phase==="waiting"?"Libert will ask where you stand.":"Open discussion")}</h1></div><span className="presence-pill"><Users size={14}/>{presence.length||1} present</span></div>{flow}</div>
     {phase==="waiting"?<>
      <div className="room-feed">
-      {invitation}
-      <p className="waiting-note">Answer in your own words. You can leave a question, and you choose when to enter the discussion.</p>
-      {mine.map(event=><article className={"room-message "+(event.author==="Libert"?"assistant":"participant")} key={event.id}><div className="room-message-head">{event.author==="Libert"?<LibertMark small/>:<span>{event.author?.slice(0,1).toUpperCase()}</span>}<strong>{event.author}</strong>{event.model&&<small>{event.model}</small>}<time>{new Date(event.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</time></div><RichText>{event.content}</RichText></article>)}
-      {thinking&&<div className="room-thinking"><Loader2 size={15} className="spin"/>Libert is choosing the next question…</div>}
-      {!mine.length&&!thinking&&<div className="room-thinking">Preparing your first question…</div>}
+      <ol className="turn-flow">
+       {!pairs.length&&<li className="open"><span>1</span><div><p className="turn-q">{thinking?"Libert is choosing the first question.":"The first question follows what this room is for."}</p></div></li>}
+       {pairs.map((pair,index)=><li className={index===pairs.length-1&&!pair.said?"open":"kept"} key={pair.id}><span>{index+1}</span><div>{pair.ask&&<p className="turn-q">{pair.ask}</p>}{pair.said&&<p className="turn-a">{pair.said}</p>}</div></li>)}
+      </ol>
+      {thinking&&pairs.length>0&&<div className="room-thinking"><Loader2 size={15} className="spin"/>The next question follows what was said.</div>}
       <div ref={endRef}/>
      </div>
-     <div className="room-composer"><textarea value={draft} maxLength={4000} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();answer();}}} placeholder="Answer in your own words…" rows={3} disabled={thinking}/><div><span>{draft.length} / 4,000</span><button disabled={!draft.trim()||thinking} onClick={answer}><Send size={16}/>Answer</button></div><button className="room-secondary" onClick={enterDiscussion}>Enter the discussion <ArrowRight size={15}/></button></div>
+     <div className="room-composer"><textarea value={draft} maxLength={4000} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();answer();}}} placeholder="Answer in your own words…" rows={3} disabled={thinking}/><div><button type="button" className="sheet-link" onClick={enterDiscussion}>Enter the discussion</button><button disabled={!draft.trim()||thinking} onClick={answer}><Send size={16}/>Answer</button></div></div>
     </>:<>
-     <div className="room-feed">{!discussionEvents.length?<div className="room-empty">{invitation}<h2>The discussion is open.</h2><p>Views from the waiting room appear here. Ask Libert a question when you want the room to go further.</p></div>:discussionEvents.map(event=><article className={"room-message "+(event.kind==="assistant"?"assistant":"participant")} key={event.id}><div className="room-message-head">{event.kind==="assistant"?<LibertMark small/>:<span>{event.author?.slice(0,1).toUpperCase()}</span>}<strong>{event.author}</strong>{event.kind==="interview"&&<small>Waiting room</small>}{event.model&&<small>{event.model}</small>}<time>{new Date(event.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</time></div><RichText>{event.content}</RichText></article>)}{thinking&&<div className="room-thinking"><Loader2 size={15} className="spin"/>Libert is considering the room…</div>}<div ref={endRef}/></div>
-     <div className="room-composer"><textarea value={draft} maxLength={4000} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();post();}}} placeholder="Add your view to the room…" rows={3}/><div><span>{draft.length} / 4,000</span><button disabled={!draft.trim()||!relayReady} onClick={post}><Send size={16}/>Share view</button></div></div>
+     <div className="room-feed">
+      <div className="voice-field">{voices.length?voices.map(voice=><article className="voice-card" key={voice.name}><strong>{voice.name}</strong><p>{voice.opinion}</p></article>):<p className="sheet-empty">Answers from the interview gather here, one card for each person.</p>}</div>
+      <section className="output-sheet"><p className="room-eyebrow">SYNTHESIS</p>{synthesis?<RichText>{synthesis}</RichText>:<p>When at least two people have spoken, Libert can write what is shared and what is still open.</p>}{thinking&&<div className="room-thinking"><Loader2 size={15} className="spin"/>Libert is writing from the room.</div>}</section>
+      <div className="output-links"><button type="button" className="sheet-link" onClick={askLibert} disabled={thinking||voices.length<2}>Synthesize</button><button type="button" className="sheet-link" onClick={askRoom} disabled={thinking}>Ask the room</button><a className="sheet-link" href="/#benchmarks">Benchmark</a><button type="button" className="sheet-link" onClick={openHabermas} disabled={voices.length<2}>Habermas</button></div>
+      <div ref={endRef}/>
+     </div>
+     <div className="room-composer"><textarea value={draft} maxLength={4000} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();post();}}} placeholder="Add a line to your card…" rows={3}/><div><span>{draft.length} / 4,000</span><button disabled={!draft.trim()||!relayReady} onClick={post}><Send size={16}/>Add to the room</button></div></div>
     </>}
    </section>
    <aside className="room-guide">
-    {phase==="waiting"?<>
-     <div className="room-eyebrow">WHILE YOU WAIT</div>
-     <h2>One question at a time.</h2>
-     <p className="panel-intro">Libert interviews you here. The discussion can open whenever you are ready.</p>
-     <div className="room-steps">
-      <div><InquiryIcon size={22}/><div><strong>Answer, or leave it.</strong><p>Each question is yours to take up. A short answer is enough.</p></div></div>
-      <div><DialogueIcon size={22}/><div><strong>Others can change the next question.</strong><p>As people arrive and speak, Libert may bring one of their views into what it asks you. Agreement is not required.</p></div></div>
-      <div><AgencyIcon size={22}/><div><strong>You enter when you choose.</strong><p>What you said in the waiting room stays with the discussion.</p></div></div>
-     </div>
-     <div className="room-people"><span>IN THIS ROOM</span>{(presence.length?presence:[{id:"self",name:name||"You",email}]).map(person=><div className="room-voice" key={person.email||person.id}><i>{(person.name||"?").slice(0,1).toUpperCase()}</i><div><strong>{person.name}{person.email&&person.email===email?" · you":""}</strong>{person.email?<p>{person.email}</p>:<p>Waiting for a Gmail match.</p>}</div></div>)}</div>
-    </>:<>
-     <div className="room-eyebrow">IN THE DISCUSSION</div>
-     <h2>Keep the disagreement visible.</h2>
-     <p className="panel-intro">Speak in your own name. Libert can ask the room a question, or reflect once several views are in.</p>
-     <div className="room-steps">
-      <div><InquiryIcon size={22}/><div><strong>Add your view.</strong><p>The waiting-room answers are already part of the room.</p></div></div>
-      <div><DialogueIcon size={22}/><div><strong>Ask Libert a question.</strong><p>The question uses what has actually been said, including people who arrived later.</p></div></div>
-      <div><AgencyIcon size={22}/><div><strong>Reflect without closing it.</strong><p>A synthesis can name shared ground and leave a real disagreement standing.</p></div></div>
-     </div>
-     <div className="room-people"><span>IN THE ROOM</span>{presence.map(person=><div className="room-voice" key={person.email||person.id}><i>{person.name.slice(0,1).toUpperCase()}</i><div><strong>{person.name}{person.email&&person.email===email?" · you":""}</strong>{person.email&&<p>{person.email}</p>}</div></div>)}</div>
-     <button className="ask-libert" onClick={askRoom} disabled={thinking}><LibertMark small/>{thinking?"Libert is asking…":"Ask Libert a question"}</button>
-     <button className="room-secondary" onClick={askLibert} disabled={thinking||roomTurns.length<2}>Ask Libert to reflect</button>
-     <div className="invite-share compact"><p>The invitation.</p>{inviteLink}</div>
-    </>}
+    <div className="room-eyebrow">HELD HERE</div>
+    <h2>{presence.length||1} {presence.length===1?"person":"people"}.</h2>
+    <p className="panel-intro">{phase==="waiting"?"The questions stay with you. The link stays with the room.":"Each card is one person’s words. The synthesis does not replace them."}</p>
+    {people}
+    {invitation}
     {error&&<div className="room-alert">{error}</div>}
     <p className="room-guide-foot">Open inquiry. Not a party line.</p>
    </aside>
