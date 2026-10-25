@@ -50,7 +50,7 @@ export default function GroupRoom({roomId}){
    setQuestion(clean(seed?.question,300));questionRef.current=clean(seed?.question,300);
    if(seed?.name)setJoined(true);
   }catch{}});
-  QRCode.toDataURL(joinUrl,{width:280,margin:2,errorCorrectionLevel:"M",color:{dark:"#17365b",light:"#edf6ff"}}).then(value=>{if(active)setQr(value);}).catch(()=>{if(active)setError("The QR code could not be generated. The invitation link still works.");});
+  QRCode.toDataURL(joinUrl,{width:840,margin:2,errorCorrectionLevel:"M",color:{dark:"#17365b",light:"#edf6ff"}}).then(value=>{if(active)setQr(value);}).catch(()=>{if(active)setError("The QR code could not be generated. The invitation link still works.");});
   return()=>{active=false;};
  },[roomId,safeRoom,joinUrl]);
 
@@ -147,7 +147,7 @@ export default function GroupRoom({roomId}){
    </section>
    <aside className="room-access">
     <div className="room-eyebrow">ENTER THIS ROOM</div><h2>Invite another voice.</h2><p>Scan the QR code or copy the private link. Anyone with the full link can join.</p>
-    <div className="qr-frame">{qr?<Image src={qr} alt="QR code for this Libert group room" width={280} height={280} unoptimized/>:<Loader2 className="spin" size={24}/>}</div>
+    <div className="qr-frame">{qr?<Image src={qr} alt="QR code for this Libert group room" width={840} height={840} unoptimized/>:<Loader2 className="spin" size={24}/>}</div>
     <button className="copy-room-link" onClick={copyLink}>{copied?<Check size={16}/>:<Copy size={16}/>} {copied?"Copied":"Copy invitation link"}</button>
     <input className="room-link" value={joinUrl} readOnly onFocus={event=>event.target.select()} aria-label="Room invitation link"/>
     <div className="room-access-note"><Share2 size={16}/><p><strong>How access works</strong>Open the link on another device. Keep at least one participant connected so new arrivals can receive the live discussion.</p></div>

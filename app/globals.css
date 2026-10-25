@@ -223,6 +223,10 @@ td button:not(.icon-button){font-size:13px;padding:0;text-align:left}
 .modal h3{font-size:14px;margin:23px 0 13px}
 .modal blockquote{border-left:2px solid #abbc98;margin:18px 0;padding:10px 20px;background:#eef3e6;font-size:14px;line-height:1.9;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
 .modal>.button{margin-top:22px}
+.modal.group-modal{display:flex;flex-direction:column;overflow:hidden}
+.group-modal-body{overflow-y:auto;min-height:0}
+.group-modal-body .form-textarea{min-height:72px;margin-bottom:8px}
+.modal.group-modal>.group-primary{flex:none;margin-top:16px}
 .settings-list{border-top:1px solid var(--line);margin:25px 0}
 .settings-list>div{display:flex;justify-content:space-between;gap:25px;padding:15px 0;border-bottom:1px solid var(--line);font-size:13px}
 .settings-list dt{color:var(--muted)}
