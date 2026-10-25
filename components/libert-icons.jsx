@@ -8,6 +8,7 @@ export function BenchmarkIcon(props) { return <Glyph {...props}><path d="M3 21h1
 export function ConstitutionIcon(props) { return <Glyph {...props}><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1v15M6 8c1-.2 2 0 3 .5M15 8.5c1-.5 2-.7 3-.5"/></Glyph>; }
 export function InquiryIcon(props) { return <Glyph {...props}><path d="M4 20v-9a8 8 0 0 1 16 0v9M8 20v-9a4 4 0 0 1 8 0v9"/><circle cx="12" cy="15" r="1.5"/></Glyph>; }
 export function AgencyIcon(props) { return <Glyph {...props}><path d="M5 20V8a4 4 0 0 1 8 0v12M13 13h7m-3-3 3 3-3 3M2 20h14"/></Glyph>; }
+export function RoomIcon(props) { return <Glyph {...props}><path d="M4 20V11a8 8 0 0 1 16 0v9"/><path d="M9 20v-8a3 3 0 0 1 6 0v8"/><path d="M2 20h20"/></Glyph>; }
 export function LibertMark({small=false}) { return <span className={"mark"+(small?" small":"")} aria-hidden="true"><svg viewBox="0 0 36 42" fill="none"><path d="M5 36V18a13 13 0 0 1 26 0v18" stroke="currentColor" strokeWidth="2"/><path d="M12 36V18a6 6 0 0 1 12 0v18" stroke="currentColor" strokeWidth="2"/><path d="M5 36h26" stroke="currentColor" strokeWidth="2"/><circle cx="18" cy="25" r="2.5" fill="currentColor"/></svg></span>; }
 export function Portal({className=""}) {
  return <svg className={"portal "+className} viewBox="0 0 150 136" fill="none" aria-hidden="true">

@@ -68,7 +68,7 @@ nav{display:flex;flex-direction:column;gap:6px}
 .muted{color:var(--muted);font-weight:400}
 .subtle-button{font-size:11px;color:#53654b;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 0;min-height:32px}
 .conversation-body{flex:1;overflow-y:auto;scrollbar-width:thin;min-height:0;padding:12px 32px 26px}
-.conversation-body.empty{display:flex;align-items:center;justify-content:center}
+.conversation-body.empty{display:flex;align-items:safe center;justify-content:center}
 .welcome{width:100%;max-width:680px;text-align:center;padding:0 0 10px}
 .inquiry-symbol{height:128px;width:142px;margin:0 auto 25px}
 .portal{width:100%;height:100%;display:block}
@@ -82,6 +82,18 @@ nav{display:flex;flex-direction:column;gap:6px}
 .example-icon{height:28px;color:#4e6843;display:grid;place-items:center}
 .example-list button>svg{position:absolute;top:21px;right:13px;color:#647b53}
 .example-caption{font-size:10px;color:#67755a}
+.welcome-start{margin-top:34px;padding-top:26px;border-top:1px solid var(--line);text-align:left}
+.welcome-start h2{font-size:32px;letter-spacing:-.8px;line-height:1.2;margin:12px 0 8px;color:var(--green)}
+.welcome-start>p{text-align:left;margin:0}
+.group-room-form{margin-top:18px;padding:22px 22px 8px;border:1px solid #c5d0d0;border-radius:12px;background:#f4f7f7;text-align:left}
+.group-room-form h2{font-size:32px;letter-spacing:-.8px;line-height:1.2;margin:10px 0 8px;color:#122021}
+.group-room-form>p{text-align:left;margin:0 0 4px;color:#3e5253}
+.group-room-form .form-input,.group-room-form .form-textarea{background:#fff}
+.prepared-label{margin-top:22px;font-size:10px;letter-spacing:1.6px;color:#3d5557;font-weight:600}
+.prepared-rooms{display:flex;flex-direction:column;gap:8px;margin:12px 0 16px}
+.prepared-rooms button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid #c5d0d0;background:#fff;border-radius:8px;padding:12px 14px;min-height:0}
+.prepared-rooms strong{font-family:Montaga,Georgia,serif;font-size:18px;font-weight:400;color:#122021}
+.prepared-rooms small{font-size:12px;color:#4d6162;margin-top:4px;line-height:1.5}
 .composer-wrap{padding:12px 32px 23px;width:100%;max-width:860px;align-self:center}
 .composer{border:1px solid #bdc9b0;border-radius:10px;background:#fdfef8;box-shadow:0 3px 9px #253d3406;padding:18px 18px 12px}
 .composer:focus-within{border-color:#59734a;box-shadow:0 0 0 3px #8b9b7b20}
@@ -272,6 +284,7 @@ code{font-size:12px;background:#edf1e4;padding:2px 4px;border-radius:3px;color:#
  .send:hover:not(:disabled){background:#3e5a40}
  .panel-evaluation button:hover{background:var(--citron)}
  .button.primary:hover{background:#3b5540}
+ .button.group-primary:hover{background:linear-gradient(180deg,#1a3032 0%,#0c1617 100%)!important;border-color:#0c1617!important;color:#f4f7f7!important}
  .attribute-row:hover,.scenario-row:hover{background:#edf2e2}
  td button:hover{color:var(--green);text-decoration:underline}
 }
