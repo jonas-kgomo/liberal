@@ -85,10 +85,33 @@ nav{display:flex;flex-direction:column;gap:6px}
 .welcome-start{margin-top:34px;padding-top:26px;border-top:1px solid var(--line);text-align:left}
 .welcome-start h2{font-size:32px;letter-spacing:-.8px;line-height:1.2;margin:12px 0 8px;color:var(--green)}
 .welcome-start>p{text-align:left;margin:0}
+.app-shell.group-theme{--paper:#e7eeee;--sidebar:#d5e0e0;--panel:#e3e9e9;--ink:#122021;--muted:#4d6162;--line:#c5d0d0;--green:#122021;--sage:#6d8688;--citron:#e4eeee;--positive:#3d5557;background:#e7eeee;color:#122021}
+body:has(.app-shell.group-theme){background:#e7eeee}
+.app-shell.group-theme .sidebar{background:#d5e0e0;border-right-color:#c5d0d0}
+.app-shell.group-theme .brand,.app-shell.group-theme .mark{color:#122021}
+.app-shell.group-theme .brand-period{color:#5d7577}
+.app-shell.group-theme .workspace-label,.app-shell.group-theme .nav-item,.app-shell.group-theme .sidebar-note,.app-shell.group-theme .sidebar-note p,.app-shell.group-theme .sidebar-footer small,.app-shell.group-theme .breadcrumb{color:#3e5253}
+.app-shell.group-theme .new-chat{background:#f4f8f8;border-color:#c5d0d0;color:#122021}
+.app-shell.group-theme .nav-item.active{background:#122021;color:#f4f7f7}
+.app-shell.group-theme .nav-item.active>svg{color:#d5e0e0}
+.app-shell.group-theme .tiny-dot{background:#7d9192}
+.app-shell.group-theme .sidebar-footer{border-top-color:#c5d0d0}
+.app-shell.group-theme .topbar,.app-shell.group-theme .main-shell,.app-shell.group-theme .conversation{background:#e7eeee;border-color:#c5d0d0}
+.app-shell.group-theme .eyebrow,.app-shell.group-theme .group-back,.app-shell.group-theme .prepared-label{color:#3d5557}
+.app-shell.group-theme .connection-status{border-color:#c5d0d0;background:#f4f8f8;color:#122021}
+.chat-layout.group-open{grid-template-columns:minmax(0,1fr)}
+.conversation-body.group-open{align-items:flex-start;padding-top:36px}
+.welcome.group-open{max-width:720px}
+.welcome.group-open .inquiry-symbol{height:120px;width:134px;margin-bottom:6px}
+.group-back{display:inline-flex;margin:0 0 14px;padding:0;font-size:12px;color:#3d5557}
 .group-room-form{margin-top:18px;padding:22px 22px 8px;border:1px solid #c5d0d0;border-radius:12px;background:#f4f7f7;text-align:left}
+.welcome.group-open .group-room-form{margin-top:0;border:0;background:transparent;padding:0 4px 40px}
 .group-room-form h2{font-size:32px;letter-spacing:-.8px;line-height:1.2;margin:10px 0 8px;color:#122021}
 .group-room-form>p{text-align:left;margin:0 0 4px;color:#3e5253}
 .group-room-form .form-input,.group-room-form .form-textarea{background:#fff}
+.group-room-form .identity-pair{margin:8px 0 0}
+.group-room-form .identity-pair .field-label{margin-bottom:0}
+.group-room-form .identity-note{margin:0 0 8px}
 .prepared-label{margin-top:22px;font-size:10px;letter-spacing:1.6px;color:#3d5557;font-weight:600}
 .prepared-rooms{display:flex;flex-direction:column;gap:8px;margin:12px 0 16px}
 .prepared-rooms button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid #c5d0d0;background:#fff;border-radius:8px;padding:12px 14px;min-height:0}
